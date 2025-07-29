@@ -1,5 +1,4 @@
 <?php
-
 namespace Stepanenko3\NovaBooleanGroup;
 
 use Illuminate\Support\Arr;
@@ -66,16 +65,27 @@ class BooleanGroup extends Field implements FilterableField
 
         $this->options = with(
             value: collect($options),
-            callback: fn ($options) => $options
-                ->dot()
-                ->map(
-                    fn ($label, $name) => $options->isAssoc()
+            callback: function ($options) {
+                $isAssoc = function (array $arr) {
+                    if ([] === $arr) {
+                        return false;
+                    }
+
+                    return array_keys($arr) !== range(0, count($arr) - 1);
+                };
+
+                $dotOptions = $options->dot();
+                $assoc      = $isAssoc($dotOptions->all());
+                return $dotOptions
+                    ->map(
+                        fn($label, $name) => $assoc
                         ? ['label' => $label, 'name' => $name]
-                        : ['label' => $label, 'name' => $label],
-                )
-                ->values()
-                ->undot()
-                ->all(),
+                        : ['label' => $label, 'name' => $label]
+                    )
+                    ->values()
+                    ->undot()
+                    ->all();
+            }
         );
 
         return $this;
@@ -88,7 +98,7 @@ class BooleanGroup extends Field implements FilterableField
      */
     public function hideFalseValues()
     {
-        $this->hideTrueValues = false;
+        $this->hideTrueValues  = false;
         $this->hideFalseValues = true;
 
         return $this;
@@ -101,7 +111,7 @@ class BooleanGroup extends Field implements FilterableField
      */
     public function hideTrueValues()
     {
-        $this->hideTrueValues = true;
+        $this->hideTrueValues  = true;
         $this->hideFalseValues = false;
 
         return $this;
@@ -126,7 +136,7 @@ class BooleanGroup extends Field implements FilterableField
      *
      * @return array
      */
-    public function serializeForFilter()
+    public function serializeForFilter(): array
     {
         return transform($this->jsonSerialize(), function ($field) {
             $field['options'] = collect($field['options'])->transform(function ($option) {
@@ -148,10 +158,10 @@ class BooleanGroup extends Field implements FilterableField
     public function jsonSerialize(): array
     {
         return array_merge(parent::jsonSerialize(), [
-            'hideTrueValues' => $this->hideTrueValues,
+            'hideTrueValues'  => $this->hideTrueValues,
             'hideFalseValues' => $this->hideFalseValues,
-            'options' => $this->options,
-            'noValueText' => Nova::__($this->noValueText),
+            'options'         => $this->options,
+            'noValueText'     => Nova::__($this->noValueText),
         ]);
     }
 
@@ -187,9 +197,9 @@ class BooleanGroup extends Field implements FilterableField
     protected function defaultFilterableCallback()
     {
         return function (NovaRequest $request, $query, $value, $attribute): void {
-            $value = collect($value)->reject(fn ($value) => null === $value)->all();
+            $value = collect($value)->reject(fn($value) => null === $value)->all();
 
-            $query->when(!empty($value), fn ($query) => $query->whereJsonContains($attribute, $value));
+            $query->when(! empty($value), fn($query) => $query->whereJsonContains($attribute, $value));
         };
     }
 }
