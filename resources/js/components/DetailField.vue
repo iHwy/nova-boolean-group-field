@@ -14,7 +14,7 @@
                         <li
                             v-for="option in group"
                             :class="classes[option.checked]"
-                            class="flex items-center rounded-full font-bold text-xs leading-tight space-x-2"
+                            class="flex items-center rounded-full text-xs leading-tight space-x-2"
                         >
                             <IconBoolean class="flex-none" :value="option.checked" />
                             <span>{{ option.label }}</span>
