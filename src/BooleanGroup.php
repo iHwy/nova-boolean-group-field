@@ -166,17 +166,27 @@ class BooleanGroup extends Field implements FilterableField
     }
 
     /**
-     * Hydrate the given attribute on the model based on the incoming request.
+     * @param NovaRequest $request
+     * @param string      $requestAttribute
+     * @param object      $model
+     * @param string      $attribute
      *
-     * @param string $requestAttribute
-     * @param object $model
-     * @param string $attribute
+     * @return void
      */
-    protected function fillAttributeFromRequest(NovaRequest $request, $requestAttribute, $model, $attribute): void
+    protected function fillAttributeFromRequest(NovaRequest $request, string $requestAttribute, object $model, string $attribute): void
     {
-        if ($request->exists($requestAttribute)) {
-            $model->{$attribute} = json_decode($request[$requestAttribute], true);
+        if (!$request->exists($requestAttribute)) {
+            return;
         }
+
+        $values = collect(json_decode($request[$requestAttribute], true))
+            ->filter(static function (bool $value) {
+                return $value;
+            })
+            ->keys()
+            ->toArray();
+
+        $model->syncPermissions($values);
     }
 
     /**
